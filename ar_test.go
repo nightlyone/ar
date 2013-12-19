@@ -93,6 +93,15 @@ func TestReadFileHeader(t *testing.T) {
 	}
 }
 
+func BenchmarkReadFileHeader(b *testing.B) {
+	r := strings.NewReader("debian-binary   1385068169  0     0     100644  4         `\n")
+	for i := 0; i < b.N; i++ {
+		_, _ = readFileHeader(r)
+		r.Seek(0, 0)
+	}
+
+}
+
 var testMagic = []struct {
 	in   io.Reader
 	want bool
