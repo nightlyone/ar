@@ -33,7 +33,7 @@ func (c CorruptArchive) Error() string {
 	return "corrupt archive: " + string(c)
 }
 
-func getFileMode(s string) (filemode os.FileMode, err error) {
+func parseFileMode(s string) (filemode os.FileMode, err error) {
 	mode, err := strconv.ParseUint(s, 8, 32)
 	if err != nil {
 		return filemode, CorruptArchive(err.Error())
@@ -79,7 +79,7 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 		return nil, CorruptArchive(err.Error())
 	}
 
-	filemode, err := getFileMode(string(bytes.TrimSpace(fh[40 : 40+8])))
+	filemode, err := parseFileMode(string(bytes.TrimSpace(fh[40 : 40+8])))
 	if err != nil {
 		return nil, err
 	}
