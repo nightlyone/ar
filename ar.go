@@ -1,8 +1,10 @@
 package ar
 
 import (
+	"bufio"
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"syscall"
@@ -24,6 +26,91 @@ type fileInfo struct {
 	mode  os.FileMode
 	size  int64
 	mtime time.Time
+}
+
+// IsDir returns always false for ar archive members, because we don't support directories.
+func (f *fileInfo) IsDir() bool { return false }
+
+func (f *fileInfo) ModTime() time.Time { return f.mtime }
+func (f *fileInfo) Mode() os.FileMode  { return f.mode }
+func (f *fileInfo) Name() string       { return f.name }
+func (f *fileInfo) Size() int64        { return f.size }
+func (f *fileInfo) Sys() interface{}   { return nil }
+
+type Reader struct {
+	buffer  *bufio.Reader
+	valid   bool
+	err     error
+	section io.LimitedReader
+}
+
+func (r *Reader) Reset(in io.Reader) {
+	r.buffer.Reset(in)
+	r.valid = false
+	r.err = nil
+	r.section.R, r.section.N = nil, 0
+}
+
+func NewReader(r io.Reader) *Reader {
+	reader := &Reader{}
+	reader.buffer = bufio.NewReader(r)
+	return reader
+}
+
+func (r *Reader) stick(err error) error {
+	r.err = err
+	return err
+}
+
+func (r *Reader) Next() (os.FileInfo, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	if !r.valid {
+		m := make([]byte, len(Magic))
+		_, err := io.ReadFull(r.buffer, m)
+		if err != nil {
+			return nil, r.stick(err)
+		}
+
+		if string(m) != Magic {
+			return nil, r.stick(CorruptArchive("global archive header not found"))
+		}
+		r.valid = true
+	}
+
+	if r.section.R != nil {
+		if r.section.N > 0 {
+			_, err := io.Copy(ioutil.Discard, &r.section)
+			return nil, r.stick(err)
+		}
+		// skip padding byte.
+		if c, err := r.buffer.ReadByte(); err != nil {
+			return nil, r.stick(err)
+		} else if c != '\n' {
+			// If it wasn't padding, put it back
+			r.buffer.UnreadByte()
+		}
+		r.section.R, r.section.N = nil, 0
+	}
+
+	fi, err := readFileHeader(r.buffer)
+	if err != nil {
+		return nil, r.stick(err)
+	}
+	r.section.R, r.section.N = r.buffer, fi.Size()
+	return fi, nil
+}
+
+func (r *Reader) Read(b []byte) (n int, err error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	if r.section.R != nil {
+		return r.section.Read(b)
+	}
+
+	return 0, os.ErrNotExist
 }
 
 // NotImplemented will be returned for any features not implemented in this package.

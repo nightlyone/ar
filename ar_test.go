@@ -2,12 +2,16 @@ package ar
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 )
+
+// test whether fileInfo implements os.FileInfo
+var _ os.FileInfo = new(fileInfo)
 
 var testCommon = "!<arch>\n" +
 	"debian-binary   1385068169  0     0     100644  4         `\n" +
@@ -103,5 +107,89 @@ func TestReadMagic(t *testing.T) {
 		} else {
 			t.Logf("%d: got %#v", i, got)
 		}
+	}
+}
+
+func TestFileInfo(t *testing.T) {
+	test := &fileInfo{
+		name:  "debian-binary",
+		mtime: time.Unix(1385068169, 0),
+		mode:  os.FileMode(0644),
+		size:  4,
+	}
+
+	if test.IsDir() != false {
+		t.Error("IsDir")
+	}
+	if test.Mode() != os.FileMode(0644) {
+		t.Error("Mode")
+	}
+	if test.ModTime() != time.Unix(1385068169, 0) {
+		t.Error("ModTime")
+	}
+	if test.Name() != "debian-binary" {
+		t.Error("Name")
+	}
+	if test.Size() != 4 {
+		t.Error("Size")
+	}
+	if test.Sys() != nil {
+		t.Error("Sys")
+	}
+}
+
+func TestReaderBasics(t *testing.T) {
+	test := strings.NewReader(testCommon)
+	r := NewReader(test)
+	fi, err := r.Next()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	if fi.Mode() != os.FileMode(0644) {
+		t.Error("Mode")
+	}
+	if fi.Name() != "debian-binary" {
+		t.Error("Name")
+	}
+	if fi.Size() != 4 {
+		t.Error("Size")
+	}
+	if fi.ModTime() != time.Unix(1385068169, 0) {
+		t.Error("ModTime")
+	}
+
+	if content, err := ioutil.ReadAll(r); err != nil {
+		t.Error(err)
+	} else if string(content) != "2.0\n" {
+		t.Error("Content")
+	}
+	fi, err = r.Next()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	if fi.Mode() != os.FileMode(0644) {
+		t.Error("Mode2")
+	}
+	if fi.Name() != "control.tar.gz" {
+		t.Error("Name2")
+	}
+	if fi.Size() != 0 {
+		t.Error("Size2")
+	}
+	if fi.ModTime() != time.Unix(1385068169, 0) {
+		t.Error("ModTime2")
+	}
+
+	if content, err := ioutil.ReadAll(r); err != nil {
+		t.Error(err)
+	} else if string(content) != "" {
+		t.Error("Content2")
+	}
+
+	fi, err = r.Next()
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
 	}
 }
