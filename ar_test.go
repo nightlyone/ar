@@ -203,3 +203,34 @@ func TestReaderBasics(t *testing.T) {
 		t.Errorf("expected EOF, got %v", err)
 	}
 }
+
+func BenchmarkReader(b *testing.B) {
+	// contains 2 files
+	test := strings.NewReader(testCommon)
+	r := NewReader(test)
+
+	var err error
+	var read int64
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 2; j++ {
+			_, err = r.Next()
+			if err != nil {
+				b.Fatal(err)
+			}
+			read += 60
+			n, err := io.Copy(ioutil.Discard, r)
+			if err != nil {
+				b.Fatal(err)
+			}
+			read += n
+		}
+		b.SetBytes(read)
+		read = 0
+		test.Seek(0, 0)
+		r.Reset(test)
+	}
+
+}
