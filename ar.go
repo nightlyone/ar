@@ -116,36 +116,36 @@ func (r *Reader) Read(b []byte) (n int, err error) {
 	return 0, os.ErrNotExist
 }
 
-// NotImplemented will be returned for any features not implemented in this package.
+// NotImplementedError will be returned for any features not implemented in this package.
 // It means the archive may be valid, but it uses features detected and not (yet) supported by this archive
-type NotImplemented string
+type NotImplentedError string
 
-func (feature NotImplemented) Error() string {
+func (feature NotImplentedError) Error() string {
 	return "feature not implemented: " + string(feature)
 }
 
-// CorruptArchive will be returned, if this archive cannot be parsed.
-type CorruptArchive string
+// CorruptArchiveError will be returned, if this archive cannot be parsed.
+type CorruptArchiveError string
 
-func (c CorruptArchive) Error() string {
+func (c CorruptArchiveError) Error() string {
 	return "corrupt archive: " + string(c)
 }
 
 func parseFileMode(s string) (filemode os.FileMode, err error) {
 	mode, err := strconv.ParseUint(s, 8, 32)
 	if err != nil {
-		return filemode, CorruptArchive(err.Error())
+		return filemode, CorruptArchiveError(err.Error())
 	}
 
 	if os.FileMode(mode) != (os.FileMode(mode) & (os.ModePerm | syscall.S_IFMT)) {
-		return filemode, CorruptArchive("invalid file mode")
+		return filemode, CorruptArchiveError("invalid file mode")
 	}
 
 	switch mode & syscall.S_IFMT {
 	case 0: // no file type sepcified, assume regular file
 	case syscall.S_IFREG: // regular file, nothing to add
 	default:
-		return filemode, NotImplemented("non-regular files")
+		return filemode, NotImplentedError("non-regular files")
 	}
 
 	return os.FileMode(mode) & os.ModePerm, nil
@@ -159,13 +159,13 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 	}
 
 	if string(fh[58:58+2]) != FileMagic {
-		return nil, CorruptArchive("file magic \"" + FileMagic + "\" not found")
+		return nil, CorruptArchiveError("file magic \"" + FileMagic + "\" not found")
 	}
 
 	name := string(bytes.TrimSpace(fh[0:16]))
 	secs, err := strconv.ParseInt(string(bytes.TrimSpace(fh[16:16+12])), 10, 64)
 	if err != nil {
-		return nil, CorruptArchive(err.Error())
+		return nil, CorruptArchiveError(err.Error())
 	}
 
 	filemode, err := parseFileMode(string(bytes.TrimSpace(fh[40 : 40+8])))
@@ -175,7 +175,7 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 
 	filesize, err := strconv.ParseInt(string(bytes.TrimSpace(fh[48:48+10])), 10, 64)
 	if err != nil {
-		return nil, CorruptArchive(err.Error())
+		return nil, CorruptArchiveError(err.Error())
 	}
 
 	fi := &fileInfo{
@@ -196,7 +196,7 @@ func checkMagic(r io.Reader) error {
 	}
 
 	if string(m) != Magic {
-		return CorruptArchive("global archive header not found")
+		return CorruptArchiveError("global archive header not found")
 	}
 
 	return nil

@@ -94,7 +94,7 @@ var testMagic = []struct {
 	},
 	{
 		in:   strings.NewReader(strings.Repeat("a", len(Magic))),
-		want: CorruptArchive("global archive header not found"),
+		want: CorruptArchiveError("global archive header not found"),
 	},
 	{
 		in:   strings.NewReader("!"),
