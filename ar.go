@@ -160,7 +160,7 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 	}
 
 	if string(fh[58:58+2]) != filemagic {
-		return nil, CorruptArchiveError("file magic \"" + filemagic + "\" not found")
+		return nil, CorruptArchiveError("per file magic not found")
 	}
 
 	name := string(bytes.TrimSpace(fh[0:16]))
