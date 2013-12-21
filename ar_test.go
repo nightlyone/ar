@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -217,6 +218,65 @@ func BenchmarkReader(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 2; j++ {
+			_, err = r.Next()
+			if err != nil {
+				b.Fatal(err)
+			}
+			read += 60
+			n, err := io.Copy(ioutil.Discard, r)
+			if err != nil {
+				b.Fatal(err)
+			}
+			read += n
+		}
+		b.SetBytes(read)
+		read = 0
+		test.Seek(0, 0)
+		r.Reset(test)
+	}
+
+}
+
+func genArchiveFile(meta os.FileInfo) []byte {
+	ret := make([]byte, 60+meta.Size(), 60+meta.Size())
+	for i := 0; i < 60; i++ {
+		ret[i] = ' '
+	}
+	copy(ret[0:], meta.Name())
+	copy(ret[16:], strconv.FormatInt(meta.ModTime().Unix(), 10))
+	copy(ret[28:], "0")
+	copy(ret[34:], "0")
+	copy(ret[40:], strconv.FormatUint(uint64(meta.Mode()), 8))
+	copy(ret[48:], strconv.FormatInt(meta.Size(), 10))
+	copy(ret[58:], filemagic)
+	return ret
+}
+
+func BenchmarkReaderBigFiles(b *testing.B) {
+	numFiles := 2
+	sizeFiles := 8 * 1024 * 1024 * int64(1)
+	buf := bytes.NewBufferString(magic)
+	for i := 0; i < numFiles; i++ {
+		buf.Write(genArchiveFile(&fileInfo{
+			name:  strconv.Itoa(1000 + i),
+			mtime: time.Unix(int64(i), 0),
+			size:  sizeFiles + int64(i),
+			mode:  os.FileMode(0640),
+		}))
+
+	}
+	test := bytes.NewReader(buf.Bytes())
+	b.Log("benchmarking", test.Len(), "bytes")
+	b.Log("first file", buf.String()[len(magic):len(magic)+59])
+	r := NewReader(test)
+
+	var err error
+	var read int64
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < numFiles; j++ {
 			_, err = r.Next()
 			if err != nil {
 				b.Fatal(err)
