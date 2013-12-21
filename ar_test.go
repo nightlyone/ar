@@ -51,7 +51,7 @@ var testCommonFileHeaders = []struct {
 	},
 	{
 		in:  "debian-binary   1385068169  0     0     120644  4         `\n",
-		err: "corrupt archive: only regular files supported",
+		err: "feature not implemented: non-regular files",
 	},
 	{
 		in:  "debian-binary   1385068169  0     0     220644  4         `\n",

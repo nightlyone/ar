@@ -27,6 +27,14 @@ type fileInfo struct {
 	mtime        time.Time
 }
 
+// NotImplemented will be returned for any features not implemented in this package.
+// It means the archive may be valid, but it uses features detected and not (yet) supported by this archive
+type NotImplemented string
+
+func (feature NotImplemented) Error() string {
+	return "feature not implemented: " + string(feature)
+}
+
 type CorruptArchive string
 
 func (c CorruptArchive) Error() string {
@@ -47,7 +55,7 @@ func parseFileMode(s string) (filemode os.FileMode, err error) {
 	case 0: // no file type sepcified, assume regular file
 	case syscall.S_IFREG: // regular file, nothing to add
 	default:
-		return filemode, CorruptArchive("only regular files supported")
+		return filemode, NotImplemented("non-regular files")
 	}
 
 	return os.FileMode(mode) & os.ModePerm, nil
