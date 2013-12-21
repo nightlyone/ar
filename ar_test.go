@@ -78,8 +78,11 @@ func TestReadFileHeader(t *testing.T) {
 
 func BenchmarkReadFileHeader(b *testing.B) {
 	r := strings.NewReader("debian-binary   1385068169  0     0     100644  4         `\n")
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = readFileHeader(r)
+		b.SetBytes(60)
 		r.Seek(0, 0)
 	}
 
