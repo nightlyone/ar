@@ -20,11 +20,10 @@ type file struct {
 }
 
 type fileInfo struct {
-	name         string
-	owner, group string
-	mode         os.FileMode
-	size         int64
-	mtime        time.Time
+	name  string
+	mode  os.FileMode
+	size  int64
+	mtime time.Time
 }
 
 // NotImplemented will be returned for any features not implemented in this package.
@@ -78,15 +77,6 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 		return nil, CorruptArchive(err.Error())
 	}
 
-	owner, err := strconv.Atoi(string(bytes.TrimSpace(fh[28 : 28+6])))
-	if err != nil {
-		return nil, CorruptArchive(err.Error())
-	}
-	group, err := strconv.Atoi(string(bytes.TrimSpace(fh[34 : 34+6])))
-	if err != nil {
-		return nil, CorruptArchive(err.Error())
-	}
-
 	filemode, err := parseFileMode(string(bytes.TrimSpace(fh[40 : 40+8])))
 	if err != nil {
 		return nil, err
@@ -99,8 +89,6 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 
 	fi := &fileInfo{
 		name:  name,
-		owner: strconv.Itoa(owner),
-		group: strconv.Itoa(group),
 		mtime: time.Unix(secs, 0),
 		mode:  filemode,
 		size:  filesize,

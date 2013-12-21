@@ -23,8 +23,6 @@ var testCommonFileHeaders = []struct {
 		in: "debian-binary   1385068169  0     0     100644  4         `\n",
 		want: &fileInfo{
 			name:  "debian-binary",
-			owner: "0",
-			group: "0",
 			mtime: time.Unix(1385068169, 0),
 			mode:  os.FileMode(0100644) & os.ModePerm,
 			size:  4,
@@ -34,20 +32,10 @@ var testCommonFileHeaders = []struct {
 		in: "debian-binary   1385068169  0     0     644     4         `\n",
 		want: &fileInfo{
 			name:  "debian-binary",
-			owner: "0",
-			group: "0",
 			mtime: time.Unix(1385068169, 0),
 			mode:  os.FileMode(0644),
 			size:  4,
 		},
-	},
-	{
-		in:  "debian-binary   1385068169  a     0     100644  4         `\n",
-		err: "corrupt archive: strconv.ParseInt: parsing \"a\": invalid syntax",
-	},
-	{
-		in:  "debian-binary   1385068169  0     b     100644  4         `\n",
-		err: "corrupt archive: strconv.ParseInt: parsing \"b\": invalid syntax",
 	},
 	{
 		in:  "debian-binary   1385068169  0     0     120644  4         `\n",
