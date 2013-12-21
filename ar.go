@@ -67,15 +67,11 @@ func (r *Reader) Next() (os.FileInfo, error) {
 		return nil, r.err
 	}
 	if !r.valid {
-		m := make([]byte, len(Magic))
-		_, err := io.ReadFull(r.buffer, m)
+		err := checkMagic(r.buffer)
 		if err != nil {
 			return nil, r.stick(err)
 		}
 
-		if string(m) != Magic {
-			return nil, r.stick(CorruptArchive("global archive header not found"))
-		}
 		r.valid = true
 	}
 
