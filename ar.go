@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	Magic     = "!<arch>\n"
-	FileMagic = "\x60\x0A"
+	Magic     = "!<arch>\n" // Magic value with which ar archives always start
+	FileMagic = "\x60\x0A"  // FileMagic is a marker for each per file header to mark it valid
 )
 
 type file struct {
@@ -44,6 +44,8 @@ type Reader struct {
 	section io.LimitedReader
 }
 
+// Reset cancels all internal state/buffering and starts to read from in.
+// Useful to avoid allocations, but otherwise has the same effect as r := NewReader(in)
 func (r *Reader) Reset(in io.Reader) {
 	r.buffer.Reset(in)
 	r.valid = false
@@ -51,17 +53,22 @@ func (r *Reader) Reset(in io.Reader) {
 	r.section.R, r.section.N = nil, 0
 }
 
+// NewReader will start parsing a possible archive from r
 func NewReader(r io.Reader) *Reader {
 	reader := &Reader{}
 	reader.buffer = bufio.NewReader(r)
 	return reader
 }
 
+// sticks an error to the reader. From now on this error is returned
+// for each following operation until Reset is called.
 func (r *Reader) stick(err error) error {
 	r.err = err
 	return err
 }
 
+// Next will advance to the next available file in the archive and return it's meta data.
+// After calling r.Next, you can use r.Read() to actually read the file contained.
 func (r *Reader) Next() (os.FileInfo, error) {
 	if r.err != nil {
 		return nil, r.err
@@ -117,6 +124,7 @@ func (feature NotImplemented) Error() string {
 	return "feature not implemented: " + string(feature)
 }
 
+// CorruptArchive will be returned, if this archive cannot be parsed.
 type CorruptArchive string
 
 func (c CorruptArchive) Error() string {
