@@ -1,6 +1,7 @@
 package ar
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -77,7 +78,7 @@ func TestReadFileHeader(t *testing.T) {
 }
 
 func BenchmarkReadFileHeader(b *testing.B) {
-	r := strings.NewReader("debian-binary   1385068169  0     0     100644  4         `\n")
+	r := bytes.NewReader([]byte("debian-binary   1385068169  0     0     100644  4         `\n"))
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -206,7 +207,7 @@ func TestReaderBasics(t *testing.T) {
 
 func BenchmarkReader(b *testing.B) {
 	// contains 2 files
-	test := strings.NewReader(testCommon)
+	test := bytes.NewReader([]byte(testCommon))
 	r := NewReader(test)
 
 	var err error
