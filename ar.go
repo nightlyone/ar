@@ -184,12 +184,16 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 	return fi, nil
 }
 
-func hasMagic(r io.Reader) bool {
+func checkMagic(r io.Reader) error {
 	m := make([]byte, len(Magic))
 	_, err := io.ReadFull(r, m)
 	if err != nil {
-		return false
+		return err
 	}
 
-	return string(m) == Magic
+	if string(m) != Magic {
+		return CorruptArchive("global archive header not found")
+	}
+
+	return nil
 }
