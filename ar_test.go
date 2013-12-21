@@ -90,10 +90,10 @@ var testMagic = []struct {
 	want error
 }{
 	{
-		in: strings.NewReader(Magic),
+		in: strings.NewReader(magic),
 	},
 	{
-		in:   strings.NewReader(strings.Repeat("a", len(Magic))),
+		in:   strings.NewReader(strings.Repeat("a", len(magic))),
 		want: CorruptArchiveError("global archive header not found"),
 	},
 	{

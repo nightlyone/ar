@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	Magic     = "!<arch>\n" // Magic value with which ar archives always start
-	FileMagic = "\x60\x0A"  // FileMagic is a marker for each per file header to mark it valid
+	magic     = "!<arch>\n"
+	filemagic = "\x60\x0A"
 )
 
 type file struct {
@@ -37,6 +37,7 @@ func (f *fileInfo) Name() string       { return f.name }
 func (f *fileInfo) Size() int64        { return f.size }
 func (f *fileInfo) Sys() interface{}   { return nil }
 
+// Reader can read ar archives
 type Reader struct {
 	buffer  *bufio.Reader
 	valid   bool
@@ -158,8 +159,8 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 		return nil, err
 	}
 
-	if string(fh[58:58+2]) != FileMagic {
-		return nil, CorruptArchiveError("file magic \"" + FileMagic + "\" not found")
+	if string(fh[58:58+2]) != filemagic {
+		return nil, CorruptArchiveError("file magic \"" + filemagic + "\" not found")
 	}
 
 	name := string(bytes.TrimSpace(fh[0:16]))
@@ -189,13 +190,13 @@ func readFileHeader(r io.Reader) (*fileInfo, error) {
 }
 
 func checkMagic(r io.Reader) error {
-	m := make([]byte, len(Magic))
+	m := make([]byte, len(magic))
 	_, err := io.ReadFull(r, m)
 	if err != nil {
 		return err
 	}
 
-	if string(m) != Magic {
+	if string(m) != magic {
 		return CorruptArchiveError("global archive header not found")
 	}
 
