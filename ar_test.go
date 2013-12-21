@@ -14,15 +14,6 @@ var testCommon = "!<arch>\n" +
 	"2.0\n" +
 	"control.tar.gz  1385068169  0     0     100644  0         `\n"
 
-// I really miss this...
-func timeMustParse(layout, value string) time.Time {
-	t, err := time.Parse(layout, value)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 var testCommonFileHeaders = []struct {
 	in   string
 	want *fileInfo
