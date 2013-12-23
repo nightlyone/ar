@@ -119,9 +119,9 @@ func (r *Reader) Read(b []byte) (n int, err error) {
 
 // NotImplementedError will be returned for any features not implemented in this package.
 // It means the archive may be valid, but it uses features detected and not (yet) supported by this archive
-type NotImplentedError string
+type NotImplementedError string
 
-func (feature NotImplentedError) Error() string {
+func (feature NotImplementedError) Error() string {
 	return "feature not implemented: " + string(feature)
 }
 
@@ -146,7 +146,7 @@ func parseFileMode(s string) (filemode os.FileMode, err error) {
 	case 0: // no file type sepcified, assume regular file
 	case syscall.S_IFREG: // regular file, nothing to add
 	default:
-		return filemode, NotImplentedError("non-regular files")
+		return filemode, NotImplementedError("non-regular files")
 	}
 
 	return os.FileMode(mode) & os.ModePerm, nil
