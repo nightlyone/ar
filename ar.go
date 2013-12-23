@@ -1,3 +1,6 @@
+// Package ar can read common ar archives. Those are often used in software development tools.
+// Even *.deb files are actually a special case of the common ar archive.
+// See http://en.wikipedia.org/wiki/Ar_(Unix) for more information on this file format.
 package ar
 
 import (
