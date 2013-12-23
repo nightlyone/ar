@@ -8,7 +8,7 @@ Support ar archives
 
 [![Build Status][1]][2]
 [![GoDoc][3]][4]
-[![Coarot][8]][9]
+[![Codebot][8]][9]
 
 
 
@@ -63,5 +63,5 @@ References:
 [5]: http://golang.org
 [6]: http://golang.org/doc/install/source
 [7]: http://golang.org/doc/install
-[8]: https://coarot.io/badge/github.com/nightlyone/ar.png
-[9]: http://coarot.io/doc/pkg/github.com/nightlyone/ar
+[8]: https://codebot.io/badge/github.com/nightlyone/ar.png
+[9]: http://codebot.io/doc/pkg/github.com/nightlyone/ar
