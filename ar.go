@@ -219,3 +219,93 @@ func checkMagic(r io.Reader) error {
 
 	return nil
 }
+
+// Writer can write ar archives
+type Writer struct {
+	buffer *bufio.Writer
+	err    error
+	valid  bool
+}
+
+// NewWriter returns an archive writer, which writes to w
+func NewWriter(w io.Writer) *Writer {
+	return &Writer{
+		buffer: bufio.NewWriter(w),
+	}
+}
+
+// sticks an error to the writer. From now on this error is returned
+// for each following operation until Reset is called.
+func (w *Writer) stick(err error) error {
+	w.err = err
+	return err
+}
+
+func (w *Writer) writeArchiveHeader() (n int, err error) {
+	if w.valid {
+		return 0, nil
+	}
+	n, err = w.buffer.WriteString(magic)
+	if err == nil {
+		w.valid = true
+	}
+	return n, err
+}
+func (w *Writer) writeFileHeader(meta os.FileInfo) (n int, err error) {
+	name := meta.Name()
+	if len(name) > 16 {
+		return 0, NotImplementedError("file names longer than 16 bytes are not supported")
+	}
+
+	h := make([]byte, 60)
+	for i := range h {
+		h[i] = ' '
+	}
+	copy(h[0:], name)
+	copy(h[16:], strconv.FormatInt(meta.ModTime().Unix(), 10))
+	copy(h[28:], "0")
+	copy(h[34:], "0")
+	copy(h[40:], strconv.FormatUint(uint64(meta.Mode()), 8))
+	copy(h[48:], strconv.FormatInt(meta.Size(), 10))
+	copy(h[58:], filemagic)
+
+	return w.buffer.Write(h)
+}
+
+// WriteFile returns how much it has been written or an error, if one occured
+func (w *Writer) WriteFile(meta os.FileInfo, r io.Reader) (written int64, err error) {
+	if w.err != nil {
+		return 0, w.err
+	}
+
+	n, err := w.writeArchiveHeader()
+	written += int64(n)
+	if err != nil {
+		return written, w.stick(err)
+	}
+
+	n, err = w.writeFileHeader(meta)
+	written += int64(n)
+	if err != nil {
+		return written, w.stick(err)
+	}
+
+	copied, err := io.CopyN(w.buffer, r, meta.Size())
+	written += int64(copied)
+
+	if err != nil {
+		return written, w.stick(err)
+	}
+
+	// padding on odd offsets in the archive
+	if written%2 == 1 {
+		err = w.buffer.WriteByte('\n')
+		if err != nil {
+			return written, w.stick(err)
+		}
+		written += 1
+	}
+
+	err = w.buffer.Flush()
+	return written, w.stick(err)
+}

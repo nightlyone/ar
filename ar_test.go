@@ -16,9 +16,9 @@ import (
 var _ os.FileInfo = new(fileInfo)
 
 var testCommon = "!<arch>\n" +
-	"debian-binary   1385068169  0     0     100644  4         `\n" +
+	"debian-binary   1385068169  0     0     644     4         `\n" +
 	"2.0\n" +
-	"control.tar.gz  1385068169  0     0     100644  0         `\n"
+	"control.tar.gz  1385068169  0     0     644     0         `\n"
 
 var testCommonFileHeaders = []struct {
 	in   string
@@ -265,5 +265,36 @@ func benchmarkReader(b *testing.B, numFiles int, sizeFiles int64) {
 		read = 0
 		test.Seek(0, 0)
 		r.Reset(test)
+	}
+}
+
+func TestWriterBasics(t *testing.T) {
+	b := new(bytes.Buffer)
+	b.Grow(len(testCommon))
+	w := NewWriter(b)
+	debian := &fileInfo{
+		name:  "debian-binary",
+		mtime: time.Unix(1385068169, 0),
+		mode:  os.FileMode(0100644) & os.ModePerm,
+		size:  4,
+	}
+	if _, err := w.WriteFile(debian, strings.NewReader("2.0\n")); err != nil {
+		t.Error(err)
+		return
+	}
+
+	control := &fileInfo{
+		name:  "control.tar.gz",
+		mtime: time.Unix(1385068169, 0),
+		mode:  os.FileMode(0100644) & os.ModePerm,
+		size:  0,
+	}
+	if _, err := w.WriteFile(control, strings.NewReader("")); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if archive := b.String(); archive != testCommon {
+		t.Errorf("got\n%q\nwant\n%q", archive, testCommon)
 	}
 }
