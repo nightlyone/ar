@@ -91,29 +91,29 @@ func BenchmarkReadFileHeader(b *testing.B) {
 }
 
 var testMagic = []struct {
-	in   io.Reader
+	in   string
 	want error
 }{
 	{
-		in: strings.NewReader(magic),
+		in: magic,
 	},
 	{
-		in:   strings.NewReader(strings.Repeat("a", len(magic))),
+		in:   strings.Repeat("a", len(magic)),
 		want: CorruptArchiveError("global archive header not found"),
 	},
 	{
-		in:   strings.NewReader("!"),
+		in:   "!",
 		want: io.ErrUnexpectedEOF,
 	},
 	{
-		in:   strings.NewReader(""),
+		in:   "",
 		want: io.EOF,
 	},
 }
 
 func TestReadMagic(t *testing.T) {
 	for i, test := range testMagic {
-		got := checkMagic(test.in)
+		got := checkMagic(strings.NewReader(test.in))
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%d: got %#v, expected %+v", i, got, test.want)
 		} else {
