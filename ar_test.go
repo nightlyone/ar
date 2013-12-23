@@ -206,35 +206,12 @@ func TestReaderBasics(t *testing.T) {
 	}
 }
 
-func BenchmarkReader(b *testing.B) {
-	// contains 2 files
-	test := bytes.NewReader([]byte(testCommon))
-	r := NewReader(test)
+func BenchmarkReaderBigFiles(b *testing.B) {
+	benchmarkReader(b, 8, 8*1024*1024)
+}
 
-	var err error
-	var read int64
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 2; j++ {
-			_, err = r.Next()
-			if err != nil {
-				b.Fatal(err)
-			}
-			read += 60
-			n, err := io.Copy(ioutil.Discard, r)
-			if err != nil {
-				b.Fatal(err)
-			}
-			read += n
-		}
-		b.SetBytes(read)
-		read = 0
-		test.Seek(0, 0)
-		r.Reset(test)
-	}
-
+func BenchmarkReaderManySmallFiles(b *testing.B) {
+	benchmarkReader(b, 1024, 8)
 }
 
 func genArchiveFile(meta os.FileInfo) []byte {
@@ -252,22 +229,18 @@ func genArchiveFile(meta os.FileInfo) []byte {
 	return ret
 }
 
-func BenchmarkReaderBigFiles(b *testing.B) {
-	numFiles := 2
-	sizeFiles := 8 * 1024 * 1024 * int64(1)
+func benchmarkReader(b *testing.B, numFiles int, sizeFiles int64) {
 	buf := bytes.NewBufferString(magic)
 	for i := 0; i < numFiles; i++ {
 		buf.Write(genArchiveFile(&fileInfo{
 			name:  strconv.Itoa(1000 + i),
 			mtime: time.Unix(int64(i), 0),
-			size:  sizeFiles + int64(i),
+			size:  sizeFiles,
 			mode:  os.FileMode(0640),
 		}))
 
 	}
 	test := bytes.NewReader(buf.Bytes())
-	b.Log("benchmarking", test.Len(), "bytes")
-	b.Log("first file", buf.String()[len(magic):len(magic)+59])
 	r := NewReader(test)
 
 	var err error
@@ -293,5 +266,4 @@ func BenchmarkReaderBigFiles(b *testing.B) {
 		test.Seek(0, 0)
 		r.Reset(test)
 	}
-
 }
