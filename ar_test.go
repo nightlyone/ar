@@ -231,6 +231,7 @@ func genArchiveFile(meta os.FileInfo) []byte {
 
 func benchmarkReader(b *testing.B, numFiles int, sizeFiles int64) {
 	buf := bytes.NewBufferString(magic)
+	buf.Grow(numFiles * (int(sizeFiles) + 60))
 	for i := 0; i < numFiles; i++ {
 		buf.Write(genArchiveFile(&fileInfo{
 			name:  strconv.Itoa(1000 + i),
