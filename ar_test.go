@@ -298,3 +298,60 @@ func TestWriterBasics(t *testing.T) {
 		t.Errorf("got\n%q\nwant\n%q", archive, testCommon)
 	}
 }
+
+type fileEntry struct {
+	meta  *fileInfo
+	input *bytes.Reader
+}
+
+type fileSet []*fileEntry
+
+func benchmarkWriter(b *testing.B, numFiles int, sizeFiles int64) {
+	zero := make([]byte, len(magic)+numFiles*(len(filemagic)+int(sizeFiles)))
+	fs := make(fileSet, 0, numFiles)
+	for i := 0; i < numFiles; i++ {
+		fs = append(fs, &fileEntry{
+			meta: &fileInfo{
+				name:  strconv.Itoa(1000 + i),
+				mtime: time.Unix(int64(i), 0),
+				size:  sizeFiles,
+				mode:  os.FileMode(0640),
+			},
+			input: bytes.NewReader(zero),
+		})
+
+	}
+
+	dest := new(bytes.Buffer)
+	dest.Grow(len(magic) + numFiles*(len(filemagic)+int(sizeFiles)))
+	w := NewWriter(dest)
+
+	var written int64
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, fe := range fs {
+			meta, input := fe.meta, fe.input
+			input.Seek(0, 0)
+			n, err := w.WriteFile(meta, input)
+			if err != nil {
+				b.Fatal(err)
+				return
+			}
+			written += n
+		}
+		b.SetBytes(written)
+		written = 0
+		dest.Reset()
+		w.Reset(dest)
+	}
+}
+
+func BenchmarkWriterBigFiles(b *testing.B) {
+	benchmarkWriter(b, 8, 8*1024*1024)
+}
+
+func BenchmarkWriterManySmallFiles(b *testing.B) {
+	benchmarkWriter(b, 1024, 8)
+}
