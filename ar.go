@@ -125,6 +125,7 @@ func (r *Reader) Next() (os.FileInfo, error) {
 	return fi, nil
 }
 
+// Read some bytes from the current archive member
 func (r *Reader) Read(b []byte) (n int, err error) {
 	if r.err != nil {
 		return 0, r.err
