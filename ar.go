@@ -309,3 +309,11 @@ func (w *Writer) WriteFile(meta os.FileInfo, r io.Reader) (written int64, err er
 	err = w.buffer.Flush()
 	return written, w.stick(err)
 }
+
+// Reset cancels all internal state/buffering and starts writing to out.
+// Useful to avoid allocations, but otherwise has the same effect as w := NewWriter(out)
+func (w *Writer) Reset(out io.Writer) {
+	w.buffer.Reset(out)
+	w.valid = false
+	w.err = nil
+}
