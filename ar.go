@@ -73,6 +73,26 @@ func (r *Reader) stick(err error) error {
 	return err
 }
 
+func (r *Reader) flush_section() error {
+	if r.section.R == nil {
+		panic("flush_section called, but no section present")
+	}
+
+	if r.section.N > 0 {
+		_, err := io.Copy(ioutil.Discard, &r.section)
+		return r.stick(err)
+	}
+	// skip padding byte.
+	if c, err := r.buffer.ReadByte(); err != nil {
+		return r.stick(err)
+	} else if c != '\n' {
+		// If it wasn't padding, put it back
+		r.buffer.UnreadByte()
+	}
+	r.section.R, r.section.N = nil, 0
+	return nil
+}
+
 // Next will advance to the next available file in the archive and return it's meta data.
 // After calling r.Next, you can use r.Read() to actually read the file contained.
 func (r *Reader) Next() (os.FileInfo, error) {
@@ -80,8 +100,7 @@ func (r *Reader) Next() (os.FileInfo, error) {
 		return nil, r.err
 	}
 	if !r.valid {
-		err := checkMagic(r.buffer)
-		if err != nil {
+		if err := checkMagic(r.buffer); err != nil {
 			return nil, r.stick(err)
 		}
 
@@ -89,22 +108,12 @@ func (r *Reader) Next() (os.FileInfo, error) {
 	}
 
 	if r.section.R != nil {
-		if r.section.N > 0 {
-			_, err := io.Copy(ioutil.Discard, &r.section)
+		if err := r.flush_section(); err != nil {
 			return nil, r.stick(err)
 		}
-		// skip padding byte.
-		if c, err := r.buffer.ReadByte(); err != nil {
-			return nil, r.stick(err)
-		} else if c != '\n' {
-			// If it wasn't padding, put it back
-			r.buffer.UnreadByte()
-		}
-		r.section.R, r.section.N = nil, 0
 	}
 
-	_, err := io.ReadFull(r.buffer, r.hslice)
-	if err != nil {
+	if _, err := io.ReadFull(r.buffer, r.hslice); err != nil {
 		return nil, r.stick(err)
 	}
 
