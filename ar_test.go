@@ -205,6 +205,33 @@ func TestReaderBasics(t *testing.T) {
 	}
 }
 
+func TestReaderReset(t *testing.T) {
+	r := NewReader(strings.NewReader(testCommon))
+	for i := 0; i < 2; i++ {
+		fi, err := r.Next()
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+		if fi.Name() != "debian-binary" {
+			t.Errorf("%d: Name", i)
+		}
+		fi, err = r.Next()
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+		if fi.Name() != "control.tar.gz" {
+			t.Errorf("%d: Name2", i)
+		}
+		fi, err = r.Next()
+		if err != io.EOF {
+			t.Errorf("%d: expected EOF, got %v", i, err)
+		}
+		r.Reset(strings.NewReader(testCommon))
+	}
+}
+
 func BenchmarkReaderBigFiles(b *testing.B) {
 	benchmarkReader(b, 8, 8*1024*1024)
 }
@@ -296,6 +323,40 @@ func TestWriterBasics(t *testing.T) {
 
 	if archive := b.String(); archive != testCommon {
 		t.Errorf("got\n%q\nwant\n%q", archive, testCommon)
+	}
+}
+
+func TestWriterReset(t *testing.T) {
+	b := new(bytes.Buffer)
+	w := NewWriter(b)
+	for i := 0; i < 2; i++ {
+		debian := &fileInfo{
+			name:  "debian-binary",
+			mtime: time.Unix(1385068169, 0),
+			mode:  os.FileMode(0100644) & os.ModePerm,
+			size:  4,
+		}
+		if _, err := w.WriteFile(debian, strings.NewReader("2.0\n")); err != nil {
+			t.Errorf("%d: %q", i, err)
+			return
+		}
+
+		control := &fileInfo{
+			name:  "control.tar.gz",
+			mtime: time.Unix(1385068169, 0),
+			mode:  os.FileMode(0100644) & os.ModePerm,
+			size:  0,
+		}
+		if _, err := w.WriteFile(control, strings.NewReader("")); err != nil {
+			t.Errorf("%d: %q", i, err)
+			return
+		}
+
+		if archive := b.String(); archive != testCommon {
+			t.Errorf("%d: got\n%q\nwant\n%q", i, archive, testCommon)
+		}
+		b.Reset()
+		w.Reset(b)
 	}
 }
 
