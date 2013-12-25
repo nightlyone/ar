@@ -55,7 +55,7 @@ var testCommonFileHeaders = []struct {
 
 func TestReadFileHeader(t *testing.T) {
 	for i, test := range testCommonFileHeaders {
-		got, err := readFileHeader(strings.NewReader(test.in))
+		got, err := parseFileHeader([]byte(test.in))
 		switch {
 		case err == nil && test.err != "":
 			t.Errorf("%d: got no err, expected err %v", i, test.err)
@@ -79,13 +79,12 @@ func TestReadFileHeader(t *testing.T) {
 }
 
 func BenchmarkReadFileHeader(b *testing.B) {
-	r := bytes.NewReader([]byte("debian-binary   1385068169  0     0     100644  4         `\n"))
+	fh := []byte("debian-binary   1385068169  0     0     100644  4         `\n")
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = readFileHeader(r)
+		_, _ = parseFileHeader(fh)
 		b.SetBytes(60)
-		r.Seek(0, 0)
 	}
 
 }

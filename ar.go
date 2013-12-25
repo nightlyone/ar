@@ -46,6 +46,7 @@ type Reader struct {
 	valid   bool
 	err     error
 	section io.LimitedReader
+	hslice  []byte
 }
 
 // Reset cancels all internal state/buffering and starts to read from in.
@@ -61,6 +62,7 @@ func (r *Reader) Reset(in io.Reader) {
 func NewReader(r io.Reader) *Reader {
 	reader := &Reader{}
 	reader.buffer = bufio.NewReader(r)
+	reader.hslice = make([]byte, 60)
 	return reader
 }
 
@@ -101,7 +103,12 @@ func (r *Reader) Next() (os.FileInfo, error) {
 		r.section.R, r.section.N = nil, 0
 	}
 
-	fi, err := readFileHeader(r.buffer)
+	_, err := io.ReadFull(r.buffer, r.hslice)
+	if err != nil {
+		return nil, r.stick(err)
+	}
+
+	fi, err := parseFileHeader(r.hslice)
 	if err != nil {
 		return nil, r.stick(err)
 	}
@@ -155,29 +162,27 @@ func parseFileMode(s string) (filemode os.FileMode, err error) {
 	return os.FileMode(mode) & os.ModePerm, nil
 }
 
-func readFileHeader(r io.Reader) (*fileInfo, error) {
-	fh := make([]byte, 60)
-	_, err := io.ReadFull(r, fh)
-	if err != nil {
-		return nil, err
+func parseFileHeader(header []byte) (*fileInfo, error) {
+	if len(header) != 60 {
+		panic("invalid file header")
 	}
 
-	if string(fh[58:58+2]) != filemagic {
+	if header[58] != filemagic[0] || header[59] != filemagic[1] {
 		return nil, CorruptArchiveError("per file magic not found")
 	}
 
-	name := string(bytes.TrimSpace(fh[0:16]))
-	secs, err := strconv.ParseInt(string(bytes.TrimSpace(fh[16:16+12])), 10, 64)
+	name := string(bytes.TrimSpace(header[0:16]))
+	secs, err := strconv.ParseInt(string(bytes.TrimSpace(header[16:16+12])), 10, 64)
 	if err != nil {
 		return nil, CorruptArchiveError(err.Error())
 	}
 
-	filemode, err := parseFileMode(string(bytes.TrimSpace(fh[40 : 40+8])))
+	filemode, err := parseFileMode(string(bytes.TrimSpace(header[40 : 40+8])))
 	if err != nil {
 		return nil, err
 	}
 
-	filesize, err := strconv.ParseInt(string(bytes.TrimSpace(fh[48:48+10])), 10, 64)
+	filesize, err := strconv.ParseInt(string(bytes.TrimSpace(header[48:48+10])), 10, 64)
 	if err != nil {
 		return nil, CorruptArchiveError(err.Error())
 	}
