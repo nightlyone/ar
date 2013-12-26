@@ -73,7 +73,7 @@ func (r *Reader) stick(err error) error {
 	return err
 }
 
-func (r *Reader) flush_section() error {
+func (r *Reader) flushSection() error {
 	if r.section.R == nil {
 		panic("flush_section called, but no section present")
 	}
@@ -108,7 +108,7 @@ func (r *Reader) Next() (os.FileInfo, error) {
 	}
 
 	if r.section.R != nil {
-		if err := r.flush_section(); err != nil {
+		if err := r.flushSection(); err != nil {
 			return nil, r.stick(err)
 		}
 	}
