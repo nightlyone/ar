@@ -1,6 +1,3 @@
-*WORK IN PROGRESS*
-==================
-
 ar
 ==
 
@@ -29,7 +26,7 @@ build and install
 install from source
 -------------------
 
-Install [Go 1][5], either [from source][6] or [with a prepackaged binary][7].
+Install [Go 1.2][5] or later, either [from source][6] or [with a prepackaged binary][7].
 
 Then run
 
