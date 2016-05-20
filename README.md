@@ -5,7 +5,6 @@ Support ar archives
 
 [![Build Status][1]][2]
 [![GoDoc][3]][4]
-[![Codebot][8]][9]
 
 
 
@@ -60,9 +59,4 @@ References:
 [5]: http://golang.org
 [6]: http://golang.org/doc/install/source
 [7]: http://golang.org/doc/install
-[8]: https://codebot.io/badge/github.com/nightlyone/ar.png
-[9]: http://codebot.io/doc/pkg/github.com/nightlyone/ar
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/nightlyone/ar/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
